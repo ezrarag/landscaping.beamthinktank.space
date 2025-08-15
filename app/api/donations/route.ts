@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       customer_email: email,
     })
 
-    if (!paymentResult.success) {
+    if (!paymentResult.success || !paymentResult.paymentIntent) {
       return NextResponse.json(
         { error: 'Failed to create payment intent' },
         { status: 500 }

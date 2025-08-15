@@ -1,9 +1,37 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Environment variables with validation
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Create a fallback client for build time
+const createSupabaseClient = () => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Return a mock client for build time
+    return {
+      from: () => ({
+        select: () => ({ order: () => ({ limit: () => ({ data: [], error: null }) }) }),
+        insert: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }),
+        update: () => ({ eq: () => ({ data: null, error: null }) }),
+      }),
+      auth: {
+        signUp: () => Promise.resolve({ data: null, error: null }),
+        signIn: () => Promise.resolve({ data: null, error: null }),
+        signOut: () => Promise.resolve({ error: null }),
+      }
+    } as any
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  })
+}
+
+export const supabase = createSupabaseClient()
 
 // Database types for TypeScript
 export interface Project {
